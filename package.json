@@ -5,7 +5,9 @@
     "run": "node index.js"
   },
   "dependencies": {
+    "axios": "^0.21.1",
     "csv": "^5.3.2",
+    "dotenv": "^8.2.0",
     "find": "^0.3.0",
     "g-i-s": "^2.1.6"
   },

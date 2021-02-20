@@ -121,3 +121,6 @@ csv/*
 !csv/example.csv
 
 .idea
+
+output.csv
+output.json
