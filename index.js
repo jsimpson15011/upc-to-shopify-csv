@@ -1,7 +1,7 @@
 require('dotenv').config()
 const os = require('os')
 const fs = require('fs').promises
-const parse = require('csv-parse/lib/sync');
+const parse = require('csv-parse/lib/sync')
 const axios = require('axios');
 
 (async function () {
@@ -71,16 +71,24 @@ const axios = require('axios');
     ]
   ]
 
+  let missingInfo = []
+
 
   const updatedRecordsPromises = records.flatMap(async (record) => {
     const upc = record[0]
-    const productInfo = await axios.get(`https://api.barcodelookup.com/v2/products?barcode=${upc}&formatted=y&key=${process.env.UPCKEY}`)
-    shopifyRecords.push(record)
+    try {
+      //const productInfo = await axios.get(`https://api.barcodelookup.com/v2/products?barcode=${upc}&formatted=y&key=${process.env.UPCKEY}`)
+      const productInfo = await axios.get(`https://api.barcodelookup.com/v2/products?barcode=${upc}&formatted=y&key=`)
+      shopifyRecords.push(record)
+    } catch (e) {
+      missingInfo.push(upc)
+    }
 
   })
 
   await Promise.all(updatedRecordsPromises)
   console.log(shopifyRecords)
+  console.log(missingInfo)
 
 
   // Write a file with one JSON per line for each record
@@ -92,7 +100,10 @@ const axios = require('axios');
 
   //csv.unshift(header.join(','))
   csv = csv.join('\r\n')
+  missingInfo = missingInfo.join('\r\n')
 
   fs.writeFile(`output.json`, json)
   fs.writeFile(`output.csv`, csv)
+
+  fs.writeFile('missing.csv', missingInfo)
 })()
