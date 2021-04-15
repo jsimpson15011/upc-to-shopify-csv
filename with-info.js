@@ -2,7 +2,8 @@ require('dotenv').config()
 const os = require('os')
 const fs = require('fs').promises
 const parse = require('csv-parse/lib/sync')
-const axios = require('axios');
+const axios = require('axios')
+const convertWeight = require("./utils/convertWeight");
 
 (async function () {
   // Prepare the dataset
@@ -12,69 +13,81 @@ const axios = require('axios');
     'b,2\n'  // Second record
   ].join(''), {encoding: 'utf8'})
   // Read the content
-  const content = await fs.readFile(`csv/example.csv`)
+  //const content = await fs.readFile(`csv/with-info-example.csv`)
+
+  const content = await fs.readFile(`csv/with-info-example.csv`)
   // Parse the CSV content
   const records = parse(content, {
     bom: true
   })
-  function stringToHandle(string){
-    return   string.replace(/[^a-z0-9\s]/gi,'').replace(/\s/gi, '-').replace(/(.)\1+/g, '$1')
+
+  function stringToHandle(string) {
+    return string.replace(/[^a-z0-9\s]/gi, '').replace(/\s/gi, '-').replace(/(.)\1+/g, '$1')
   }
 
-  const shopifyRecords = [
-    [
-      'Handle',
-      'Title',
-      'Body (HTML)',
-      'Vendor',
-      'Type',
-      'Tags',
-      'Published',
-      'Option1 Name',
-      'Option1 Value',
-      'Option2 Name',
-      'Option2 Value',
-      'Option3 Name',
-      'Option3 Value',
-      'Variant SKU',
-      'Variant Grams',
-      'Variant Inventory Tracker',
-      'Variant Inventory Qty',
-      'Variant Inventory Policy',
-      'Variant Fulfillment Service',
-      'Variant Price',
-      'Variant Compare At Price',
-      'Variant Requires Shipping',
-      'Variant Taxable',
-      'Variant Barcode',
-      'Image Src',
-      'Image Position',
-      'Image Alt Text',
-      'Gift Card',
-      'SEO Title',
-      'SEO Description',
-      'Google Shopping / Google Product Category',
-      'Google Shopping / Gender',
-      'Google Shopping / Age Group',
-      'Google Shopping / MPN',
-      'Google Shopping / AdWords Grouping',
-      'Google Shopping / AdWords Labels',
-      'Google Shopping / Condition',
-      'Google Shopping / Custom Product',
-      'Google Shopping / Custom Label 0',
-      'Google Shopping / Custom Label 1',
-      'Google Shopping / Custom Label 2',
-      'Google Shopping / Custom Label 3',
-      'Google Shopping / Custom Label 4',
-      'Variant Image',
-      'Variant Weight Unit',
-      'Variant Tax Code',
-      'Cost per item',
-      'Status'
-    ]
+  const shopifyHeader = [
+    'Handle',
+    'Title',
+    'Body (HTML)',
+    'Vendor',
+    'Type',
+    'Collection',
+    'Tags',
+    'Published',
+    'Option1 Name',
+    'Option1 Value',
+    'Option2 Name',
+    'Option2 Value',
+    'Option3 Name',
+    'Option3 Value',
+    'Variant SKU',
+    'Variant Grams',
+    'Variant Inventory Tracker',
+    'Variant Inventory Policy',
+    'Variant Fulfillment Service',
+    'Variant Inventory Qty',
+    'Variant Price',
+    'Variant Compare At Price',
+    'Variant Requires Shipping',
+    'Variant Taxable',
+    'Variant Barcode',
+    'Image Src',
+    'Image Position',
+    'Image Alt Text',
+    'Gift Card',
+    'SEO Title',
+    'SEO Description',
+    'Google Shopping / Google Product Category',
+    'Google Shopping / Gender',
+    'Google Shopping / Age Group',
+    'Google Shopping / MPN',
+    'Google Shopping / AdWords Grouping',
+    'Google Shopping / AdWords Labels',
+    'Google Shopping / Condition',
+    'Google Shopping / Custom Product',
+    'Google Shopping / Custom Label 0',
+    'Google Shopping / Custom Label 1',
+    'Google Shopping / Custom Label 2',
+    'Google Shopping / Custom Label 3',
+    'Google Shopping / Custom Label 4',
+    'Variant Image',
+    'Variant Weight Unit',
+    'Variant Tax Code',
+    'Cost per item',
+    'Status'
   ]
 
-  let missingInfo = []
+  const shopifyRecords = [
+    shopifyHeader
+  ]
+
+  let missingInfo = [
+    shopifyHeader
+  ]
+
+  function getIndexByLabel(label) {
+    return shopifyRecords[0].indexOf(label)
+  }
 
   const dummyProduct = {
     products: [
@@ -111,7 +124,7 @@ const axios = require('axios');
         weight: "1.2 lb",
         release_date: "",
         description: "Natures First Sea Salt For Culinary Use.",
-        features: [ ],
+        features: [],
         images: [
           "https://images.barcodelookup.com/1031/10319275-1.jpg"
         ],
@@ -215,67 +228,94 @@ const axios = require('axios');
             currency_symbol: "£"
           }
         ],
-        reviews: [ ]
+        reviews: []
       }
     ]
   }
 
+
   const updatedRecordsPromises = records.flatMap(async (record) => {
-    const upc = record[0]
+    if (record[getIndexByLabel("Variant Barcode")] < 99999999999) {
+      record[getIndexByLabel("Variant Barcode")] = "0" + record[getIndexByLabel("Variant Barcode")]
+    }
+    const upc = record[getIndexByLabel("Variant Barcode")]
+
     try {
       const productReq = await axios.get(`https://api.barcodelookup.com/v2/products?barcode=${upc}&formatted=y&key=${process.env.UPCKEY}`)
       const productInfo = await productReq.data.products[0]
-      console.log(productInfo)
+      //console.log(productInfo)
       //const productInfo = dummyProduct.products[0]
       let row = []
 
-      row[0] = stringToHandle(productInfo.product_name)
-      row[1] = productInfo.product_name
-      row[2] = productInfo.description
+      const descIndex = getIndexByLabel("Body (HTML)")
+      const correctWeight = convertWeight.convertWeight(record[getIndexByLabel("Variant Weight Unit")])
 
-      row[2] += productInfo.ingredients ? "<br><h3>Ingredients:</h3> "+ productInfo.ingredients + "<br>" : ""
-      row[2] += productInfo.nutrition_facts ? "<h3>Nutrition Facts:</h3>"+ productInfo.nutrition_facts + "<br>" : ""
+      record[getIndexByLabel("Handle")] = stringToHandle(record[getIndexByLabel("Title")])
+      //record[1] = productInfo.product_name
+      record[descIndex] = productInfo.description
+
+      record[descIndex] += productInfo.ingredients ? "<br><h3>Ingredients:</h3> " + productInfo.ingredients + "<br>" : ""
+      record[descIndex] += productInfo.nutrition_facts ? "<h3>Nutrition Facts:</h3>" + productInfo.nutrition_facts + "<br>" : ""
       productInfo.features.forEach(item => {
-        row[2] += item
+        record[descIndex] += item
       })
-      row[3] = productInfo.manufacturer
-      //row[4] = productInfo.category
-      row[6] = "FALSE"
-      row[14] = productInfo.weight ? Math.round((productInfo.weight.replace(/[^0-9.]/g, '') / 2.205) * 1000) : ""
-      row[15] = "shopify"
-      row[17] = "deny"
-      row[18] = "manual"
-      row[23] = productInfo.barcode_number
-      row[24] = productInfo.images[0]
-      row[47] = "draft"
+      //record[3] = productInfo.manufacturer
+      //record[4] = productInfo.category
+      record[getIndexByLabel("Published")] = "FALSE"
+      record[getIndexByLabel("Variant Grams")] = correctWeight.weight
+      record[getIndexByLabel("Variant Weight Unit")] = correctWeight.unit
+      record[getIndexByLabel("Variant Inventory Tracker")] = "shopify"
+      if(record[getIndexByLabel("Variant Inventory Policy")] === ""){
+        record[getIndexByLabel("Variant Inventory Policy")] = "continue"
+      }
+      //record[17] = "deny"
+      record[getIndexByLabel("Variant Fulfillment Service")] = "manual"
+      //record[23] = productInfo.barcode_number
+      record[getIndexByLabel("Variant Image")] = productInfo.images[0]
+      record[getIndexByLabel("Status")] = "draft"
 
-
-      shopifyRecords.push(row)
+      shopifyRecords.push(record)
     } catch (e) {
-      console.log(e)
-      missingInfo.push(upc)
+      //console.log(e)
+      const correctWeight = convertWeight.convertWeight(record[getIndexByLabel("Variant Weight Unit")])
+
+      record[getIndexByLabel("Handle")] = stringToHandle(record[getIndexByLabel("Title")])
+      //record[1] = productInfo.product_name
+
+      //record[3] = productInfo.manufacturer
+      //record[4] = productInfo.category
+      record[getIndexByLabel("Published")] = "FALSE"
+      record[getIndexByLabel("Variant Grams")] = correctWeight.weight
+      record[getIndexByLabel("Variant Weight Unit")] = correctWeight.unit
+      record[getIndexByLabel("Variant Inventory Tracker")] = "shopify"
+      //record[17] = "deny"
+      record[getIndexByLabel("Variant Fulfillment Service")] = "manual"
+      //record[23] = productInfo.barcode_number
+      record[getIndexByLabel("Status")] = "draft"
+
+      missingInfo.push(record)
     }
 
   })
 
   await Promise.all(updatedRecordsPromises)
-  console.log(shopifyRecords)
-  console.log(missingInfo)
+  //console.log(shopifyRecords)
+  //console.log(missingInfo)
 
+  function arrayToCsv(arr, fileName){
+    // Write a file with one JSON per line for each record
+    //const json = arr.map(JSON.stringify).join('\n')
+    const items = arr
+    const replacer = (key, value) => value === null ? '' : value // specify how you want to handle null values here
+    const header = Object.keys(items[0])
+    let csv = items.map(row => header.map(fieldName => JSON.stringify(row[fieldName], replacer)).join(',').replace(/\\"/g, '""'))
 
-  // Write a file with one JSON per line for each record
-  const json = shopifyRecords.map(JSON.stringify).join('\n')
-  const items = shopifyRecords
-  const replacer = (key, value) => value === null ? '' : value // specify how you want to handle null values here
-  const header = Object.keys(items[0])
-  let csv = items.map(row => header.map(fieldName => JSON.stringify(row[fieldName], replacer)).join(',').replace(/\\"/g, '""'))
+    //csv.unshift(header.join(','))
+    csv = csv.join('\r\n')
+    fs.writeFile(fileName, csv)
+  }
 
-  //csv.unshift(header.join(','))
-  csv = csv.join('\r\n')
-  missingInfo = missingInfo.join('\r\n')
+  arrayToCsv(shopifyRecords, 'output.csv')
+  arrayToCsv(missingInfo, 'missing-output.csv')
 
-  fs.writeFile(`output.json`, json)
-  fs.writeFile(`output.csv`, csv)
-
-  fs.writeFile('missing.csv', missingInfo)
 })()
