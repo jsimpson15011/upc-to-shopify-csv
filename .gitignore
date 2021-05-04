@@ -120,6 +120,9 @@ dist
 csv/*
 !csv/example.csv
 
+outputs/*
+!outputs/example.txt
+
 .idea
 
 output.csv

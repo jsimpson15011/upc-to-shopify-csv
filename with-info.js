@@ -3,7 +3,13 @@ const os = require('os')
 const fs = require('fs').promises
 const parse = require('csv-parse/lib/sync')
 const axios = require('axios')
-const convertWeight = require("./utils/convertWeight");
+const convertWeight = require("./utils/convertWeight")
+const readline = require("readline")
+
+const rl = readline.createInterface({
+  input: process.stdin,
+  output: process.stdout
+});
 
 (async function () {
   // Prepare the dataset
@@ -15,7 +21,7 @@ const convertWeight = require("./utils/convertWeight");
   // Read the content
   //const content = await fs.readFile(`csv/with-info-example.csv`)
 
-  const content = await fs.readFile(`csv/with-info-example.csv`)
+  const content = await fs.readFile(`csv/health-and-beauty.csv`)
   // Parse the CSV content
   const records = parse(content, {
     bom: true
@@ -265,7 +271,7 @@ const convertWeight = require("./utils/convertWeight");
       record[getIndexByLabel("Variant Grams")] = correctWeight.weight
       record[getIndexByLabel("Variant Weight Unit")] = correctWeight.unit
       record[getIndexByLabel("Variant Inventory Tracker")] = "shopify"
-      if(record[getIndexByLabel("Variant Inventory Policy")] === ""){
+      if (record[getIndexByLabel("Variant Inventory Policy")] === "") {
         record[getIndexByLabel("Variant Inventory Policy")] = "continue"
       }
       //record[17] = "deny"
@@ -302,7 +308,7 @@ const convertWeight = require("./utils/convertWeight");
   //console.log(shopifyRecords)
   //console.log(missingInfo)
 
-  function arrayToCsv(arr, fileName){
+  function arrayToCsv(arr, fileName) {
     // Write a file with one JSON per line for each record
     //const json = arr.map(JSON.stringify).join('\n')
     const items = arr
@@ -315,7 +321,11 @@ const convertWeight = require("./utils/convertWeight");
     fs.writeFile(fileName, csv)
   }
 
-  arrayToCsv(shopifyRecords, 'output.csv')
-  arrayToCsv(missingInfo, 'missing-output.csv')
+  rl.question('Please Enter Your file name \nFiles will be formatted like this: (?)-output.csv (?)-missing.csv where (?) is your file name: \n', function (name) {
+    arrayToCsv(shopifyRecords, 'outputs/'+name + '-output.csv');
+    arrayToCsv(missingInfo, 'outputs/'+name + 'missing.csv');
+    rl.close();
+  })
+
 
 })()
