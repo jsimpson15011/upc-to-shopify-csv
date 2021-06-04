@@ -3,7 +3,8 @@
   "version": "1.0.0",
   "scripts": {
     "run": "node index.js",
-    "infoParse": "node with-info.js"
+    "infoParse": "node with-info.js",
+    "noApi": "node no-api.js"
   },
   "dependencies": {
     "axios": "^0.21.1",

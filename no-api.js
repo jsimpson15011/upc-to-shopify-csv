@@ -241,56 +241,13 @@ const rl = readline.createInterface({
 
   let prevRecord = [];
 
-  const updatedRecordsPromises = records.flatMap(async (record) => {
+  const updatedRecordsPromises = records.flatMap((record) => {
     if (record[getIndexByLabel("Variant Barcode")] < 99999999999) {
       record[getIndexByLabel("Variant Barcode")] = "0" + record[getIndexByLabel("Variant Barcode")]
     }
     const upc = record[getIndexByLabel("Variant Barcode")]
 
-    try {
-      const productReq = await axios.get(`https://api.barcodelookup.com/v2/products?barcode=${upc}&formatted=y&key=${process.env.UPCKEY}`)
-      const productInfo = await productReq.data.products[0]
-      //console.log(productInfo)
-      //const productInfo = dummyProduct.products[0]
-      let row = []
 
-      const descIndex = getIndexByLabel("Body (HTML)")
-      const correctWeight = convertWeight.convertWeight(record[getIndexByLabel("Variant Weight Unit")])
-      //console.log(prevRecord[getIndexByLabel("Title")])
-/*      if (!record[getIndexByLabel("Title")]){
-        console.log(prevRecord[getIndexByLabel("Handle")])
-      }*/
-      record[getIndexByLabel("Handle")] = record[getIndexByLabel("Title")] ? stringToHandle(record[getIndexByLabel("Title")]) : prevRecord[getIndexByLabel("Handle")]
-      //record[1] = productInfo.product_name
-
-      if(record[descIndex].length < 1)
-      {
-        record[descIndex] = productInfo.description
-
-        record[descIndex] += productInfo.ingredients ? "<br><h3>Ingredients:</h3> " + productInfo.ingredients + "<br>" : ""
-        record[descIndex] += productInfo.nutrition_facts ? "<h3>Nutrition Facts:</h3>" + productInfo.nutrition_facts + "<br>" : ""
-        productInfo.features.forEach(item => {
-          record[descIndex] += item
-        })
-      }
-
-      //record[3] = productInfo.manufacturer
-      //record[4] = productInfo.category
-      record[getIndexByLabel("Published")] = "FALSE"
-      record[getIndexByLabel("Variant Grams")] = correctWeight.weight
-      record[getIndexByLabel("Variant Weight Unit")] = correctWeight.unit
-      record[getIndexByLabel("Variant Inventory Tracker")] = "shopify"
-      if (record[getIndexByLabel("Variant Inventory Policy")] === "") {
-        record[getIndexByLabel("Variant Inventory Policy")] = "continue"
-      }
-      //record[17] = "deny"
-      record[getIndexByLabel("Variant Fulfillment Service")] = "manual"
-      //record[23] = productInfo.barcode_number
-      record[getIndexByLabel("Variant Image")] = productInfo.images[0]
-      record[getIndexByLabel("Status")] = "draft"
-
-      shopifyRecords.push(record)
-    } catch (e) {
       const correctWeight = convertWeight.convertWeight(record[getIndexByLabel("Variant Weight Unit")])
 
       console.log(record[getIndexByLabel("Title")], record[getIndexByLabel("Variant Weight Unit")])
@@ -308,13 +265,14 @@ const rl = readline.createInterface({
       record[getIndexByLabel("Variant Fulfillment Service")] = "manual"
       //record[23] = productInfo.barcode_number
       record[getIndexByLabel("Status")] = "draft"
+    record[getIndexByLabel("Variant Inventory Policy")] = "continue"
 
       missingInfo.push(record)
-    }
+
     prevRecord = record
   })
 
-  await Promise.all(updatedRecordsPromises)
+  //await Promise.all(updatedRecordsPromises)
   //console.log(shopifyRecords)
   //console.log(missingInfo)
 

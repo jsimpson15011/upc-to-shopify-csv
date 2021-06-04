@@ -1,6 +1,5 @@
 exports.convertWeight = function (weightString){
   if (weightString === ""){
-    console.log("blank")
     return {
       weight: "",
       unit: ""
@@ -8,6 +7,8 @@ exports.convertWeight = function (weightString){
   }
   const unit = weightString.match(/[a-z]/g).join("")
   let weight = weightString.replace(unit, "")
+
+
 
   if (unit === "lb" || unit === "lbs"){
     weight = weight * 453
