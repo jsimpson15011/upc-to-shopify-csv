@@ -21,7 +21,7 @@ const rl = readline.createInterface({
   // Read the content
   //const content = await fs.readFile(`csv/with-info-example.csv`)
 
-  const content = await fs.readFile(`csv/grocery-3.csv`)
+  const content = await fs.readFile(`./combined.csv`)
   // Parse the CSV content
   const records = parse(content, {
     bom: true
@@ -250,8 +250,6 @@ const rl = readline.createInterface({
 
       const correctWeight = convertWeight.convertWeight(record[getIndexByLabel("Variant Weight Unit")])
 
-      console.log(record[getIndexByLabel("Title")], record[getIndexByLabel("Variant Weight Unit")])
-
       record[getIndexByLabel("Handle")] = record[getIndexByLabel("Title")] ? stringToHandle(record[getIndexByLabel("Title")]) : prevRecord[getIndexByLabel("Handle")]
       //record[1] = productInfo.product_name
 
@@ -266,8 +264,14 @@ const rl = readline.createInterface({
       //record[23] = productInfo.barcode_number
       record[getIndexByLabel("Status")] = "draft"
     record[getIndexByLabel("Variant Inventory Policy")] = "continue"
+    const descIndex = getIndexByLabel("Body (HTML)")
 
+    record[descIndex] = record[descIndex].replace(/\\n/g, '<br>')
+
+    if(!(record[descIndex] === "Body (HTML)")){
       missingInfo.push(record)
+    }
+
 
     prevRecord = record
   })

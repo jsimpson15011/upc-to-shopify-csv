@@ -21,7 +21,7 @@ const rl = readline.createInterface({
   // Read the content
   //const content = await fs.readFile(`csv/with-info-example.csv`)
 
-  const content = await fs.readFile(`csv/grocery-3.csv`)
+  const content = await fs.readFile(`./combined.csv`)
   // Parse the CSV content
   const records = parse(content, {
     bom: true
@@ -239,10 +239,10 @@ const rl = readline.createInterface({
     ]
   }
 
-  let prevRecord = [];
+  let prevRecord = []
 
   const updatedRecordsPromises = records.flatMap(async (record) => {
-    if (record[getIndexByLabel("Variant Barcode")] < 99999999999) {
+    if (record[getIndexByLabel("Variant Barcode")].length < 12) {
       record[getIndexByLabel("Variant Barcode")] = "0" + record[getIndexByLabel("Variant Barcode")]
     }
     const upc = record[getIndexByLabel("Variant Barcode")]
@@ -257,14 +257,15 @@ const rl = readline.createInterface({
       const descIndex = getIndexByLabel("Body (HTML)")
       const correctWeight = convertWeight.convertWeight(record[getIndexByLabel("Variant Weight Unit")])
       //console.log(prevRecord[getIndexByLabel("Title")])
-/*      if (!record[getIndexByLabel("Title")]){
-        console.log(prevRecord[getIndexByLabel("Handle")])
-      }*/
-      record[getIndexByLabel("Handle")] = record[getIndexByLabel("Title")] ? stringToHandle(record[getIndexByLabel("Title")]) : prevRecord[getIndexByLabel("Handle")]
+      /*      if (!record[getIndexByLabel("Title")]){
+              console.log(prevRecord[getIndexByLabel("Handle")])
+            }*/
+      if(!record[getIndexByLabel("Handle")]){
+        record[getIndexByLabel("Handle")] = record[getIndexByLabel("Title")] ? stringToHandle(record[getIndexByLabel("Title")]) : prevRecord[getIndexByLabel("Handle")]
+      }
       //record[1] = productInfo.product_name
 
-      if(record[descIndex].length < 1)
-      {
+      if (record[descIndex].length < 1) {
         record[descIndex] = productInfo.description
 
         record[descIndex] += productInfo.ingredients ? "<br><h3>Ingredients:</h3> " + productInfo.ingredients + "<br>" : ""
@@ -288,15 +289,24 @@ const rl = readline.createInterface({
       //record[23] = productInfo.barcode_number
       record[getIndexByLabel("Variant Image")] = productInfo.images[0]
       record[getIndexByLabel("Status")] = "draft"
-
-      shopifyRecords.push(record)
+      if(record[getIndexByLabel("Option1 Name")].length === 0){
+        record[getIndexByLabel("Option1 Name")] = "Title"
+      }
+      if(record[getIndexByLabel("Option1 Value")].length === 0){
+        record[getIndexByLabel("Option1 Value")] = "Default Title"
+      }
+      if (!(record[descIndex] === "Body (HTML)")) {
+        shopifyRecords.push(record)
+      }
     } catch (e) {
+      const descIndex = getIndexByLabel("Body (HTML)")
+
       const correctWeight = convertWeight.convertWeight(record[getIndexByLabel("Variant Weight Unit")])
 
-      console.log(record[getIndexByLabel("Title")], record[getIndexByLabel("Variant Weight Unit")])
 
-      record[getIndexByLabel("Handle")] = record[getIndexByLabel("Title")] ? stringToHandle(record[getIndexByLabel("Title")]) : prevRecord[getIndexByLabel("Handle")]
-      //record[1] = productInfo.product_name
+      if(!record[getIndexByLabel("Handle")]){
+        record[getIndexByLabel("Handle")] = record[getIndexByLabel("Title")] ? stringToHandle(record[getIndexByLabel("Title")]) : prevRecord[getIndexByLabel("Handle")]
+      }      //record[1] = productInfo.product_name
 
       //record[3] = productInfo.manufacturer
       //record[4] = productInfo.category
@@ -308,8 +318,15 @@ const rl = readline.createInterface({
       record[getIndexByLabel("Variant Fulfillment Service")] = "manual"
       //record[23] = productInfo.barcode_number
       record[getIndexByLabel("Status")] = "draft"
-
-      missingInfo.push(record)
+      if(record[getIndexByLabel("Option1 Name")].length === 0){
+        record[getIndexByLabel("Option1 Name")] = "Title"
+      }
+      if(record[getIndexByLabel("Option1 Value")].length === 0){
+        record[getIndexByLabel("Option1 Value")] = "Default Title"
+      }
+      if (!(record[descIndex] === "Body (HTML)")) {
+        missingInfo.push(record)
+      }
     }
     prevRecord = record
   })
@@ -332,9 +349,9 @@ const rl = readline.createInterface({
   }
 
   rl.question('Please Enter Your file name \nFiles will be formatted like this: (?)-output.csv (?)-missing.csv where (?) is your file name: \n', function (name) {
-    arrayToCsv(shopifyRecords, 'outputs/'+name + '-output.csv');
-    arrayToCsv(missingInfo, 'outputs/'+name + 'missing.csv');
-    rl.close();
+    arrayToCsv(shopifyRecords, 'outputs/' + name + '-output.csv')
+    arrayToCsv(missingInfo, 'outputs/' + name + 'missing.csv')
+    rl.close()
   })
 
 

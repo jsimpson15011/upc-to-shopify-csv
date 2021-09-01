@@ -1,11 +1,23 @@
 exports.convertWeight = function (weightString){
+  console.log(weightString.length)
+  console.log(weightString)
   if (weightString === ""){
     return {
       weight: "",
       unit: ""
     }
   }
-  const unit = weightString.match(/[a-z]/g).join("")
+  let unit = weightString.match(/[a-z]/g)
+    if(unit !== null){
+      unit = unit.join("")
+    }
+    if(unit === null || unit.length === 0){
+      return {
+        weight: "",
+        unit: ""
+      }
+    }
+
   let weight = weightString.replace(unit, "")
 
 
@@ -14,11 +26,18 @@ exports.convertWeight = function (weightString){
     weight = weight * 453
   }
   if(unit ==="lbs"){
-    weight = "lb"
+    unit = "lb"
   }
 
   if (unit === "oz"){
     weight = weight * 28.35
+  }
+
+  if (isNaN(weight)){
+    return {
+      weight: "",
+      unit: ""
+    }
   }
 
   return{

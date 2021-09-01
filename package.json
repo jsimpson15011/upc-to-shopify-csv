@@ -4,10 +4,12 @@
   "scripts": {
     "run": "node index.js",
     "infoParse": "node with-info.js",
-    "noApi": "node no-api.js"
+    "noApi": "node no-api.js",
+    "combine": "node combine-spreadsheets.js"
   },
   "dependencies": {
     "axios": "^0.21.1",
+    "barcode-validator": "^1.0.2",
     "csv": "^5.3.2",
     "dotenv": "^8.2.0",
     "find": "^0.3.0",
